@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.CardDefaults
 
 @Composable
 fun ConnectorSelectionScreen(
@@ -63,17 +64,31 @@ fun ConnectorSelectionScreen(
 
         // Список конекторів
         state.connectors.forEach { connector ->
+            val isSelected = state.selectedConnectorId == connector.id
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                    .clickable { viewModel.onConnectorSelected(connector.id) }
+                    .clickable { viewModel.onConnectorSelected(connector.id) },
+                colors = if (isSelected) {
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                } else {
+                    CardDefaults.cardColors()
+                }
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(connector.name, style = MaterialTheme.typography.bodyLarge)
-                    Text("${connector.maxPowerKw} kW", style = MaterialTheme.typography.bodyMedium)
-
-                    if (state.selectedConnectorId == connector.id) {
+                    Text(
+                        connector.name,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        "${connector.maxPowerKw} kW",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (isSelected) {
                         Text(
                             "Selected",
                             style = MaterialTheme.typography.bodySmall,

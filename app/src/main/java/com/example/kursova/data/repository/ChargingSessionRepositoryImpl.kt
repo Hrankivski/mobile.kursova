@@ -33,28 +33,33 @@ class ChargingSessionRepositoryImpl(
         totalPrice: Double,
         tariffUsed: String
     ) {
-        val all = dao.getAll()
-        val existing = all.find { it.id == sessionId } ?: return
+        val existing = dao.getById(sessionId) ?: return
+
         val updated = existing.copy(
             endTime = endTime,
             energyKwh = energyKwh,
             totalPrice = totalPrice,
             tariffUsed = tariffUsed
         )
+
         dao.insert(updated)
     }
 
     override suspend fun getAll(): List<ChargingSession> =
-        dao.getAll().map {
-            ChargingSession(
-                id = it.id,
-                userCardId = it.userCardId,
-                connectorId = it.connectorId,
-                startTime = it.startTime,
-                endTime = it.endTime,
-                energyKwh = it.energyKwh,
-                totalPrice = it.totalPrice,
-                tariffUsed = it.tariffUsed
-            )
-        }
+        dao.getAll().map { it.toDomain() }
+
+    override suspend fun getById(id: Long): ChargingSession? =
+        dao.getById(id)?.toDomain()
+
+    private fun ChargingSessionEntity.toDomain(): ChargingSession =
+        ChargingSession(
+            id = id,
+            userCardId = userCardId,
+            connectorId = connectorId,
+            startTime = startTime,
+            endTime = endTime,
+            energyKwh = energyKwh,
+            totalPrice = totalPrice,
+            tariffUsed = tariffUsed
+        )
 }
