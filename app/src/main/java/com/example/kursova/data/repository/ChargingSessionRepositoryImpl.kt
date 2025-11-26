@@ -42,6 +42,7 @@ class ChargingSessionRepositoryImpl(
             tariffUsed = tariffUsed
         )
 
+        // insert з REPLACE у DAO оновить запис по тому ж id
         dao.insert(updated)
     }
 
@@ -50,6 +51,9 @@ class ChargingSessionRepositoryImpl(
 
     override suspend fun getById(id: Long): ChargingSession? =
         dao.getById(id)?.toDomain()
+
+    override suspend fun getAllForUser(userId: Int): List<ChargingSession> =
+        dao.getAllForUser(userId).map { it.toDomain() }
 
     private fun ChargingSessionEntity.toDomain(): ChargingSession =
         ChargingSession(

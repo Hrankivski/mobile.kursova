@@ -36,6 +36,9 @@ object Graph {
     lateinit var chargingSessionRepository: ChargingSessionRepository
         private set
 
+    var currentUserId: Int? = null
+    var currentUserIsAdmin: Boolean = false
+
     fun provide(app: Application) {
         database = Room.databaseBuilder(
             app,

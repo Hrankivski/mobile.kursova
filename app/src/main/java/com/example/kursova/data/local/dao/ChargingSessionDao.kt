@@ -17,4 +17,8 @@ interface ChargingSessionDao {
 
     @Query("SELECT * FROM charging_sessions WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): ChargingSessionEntity?
+
+    @Query("SELECT * FROM charging_sessions WHERE userCardId = :userId ORDER BY startTime DESC")
+    suspend fun getAllForUser(userId: Int): List<ChargingSessionEntity>
 }
+

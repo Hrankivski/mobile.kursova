@@ -33,15 +33,32 @@ class HistoryViewModel : ViewModel() {
         load()
     }
 
+    // ⬇⬇⬇ ОНОВЛЕНА ФУНКЦІЯ load() ⬇⬇⬇
     private fun load() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true)
-                val sessions = sessionRepository.getAll()
+                // починаємо завантаження
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true,
+                    error = null
+                )
+
+                val userId = Graph.currentUserId
+                if (userId == null) {
+                    _uiState.value = HistoryUiState(
+                        isLoading = false,
+                        error = "User not logged in"
+                    )
+                    return@launch
+                }
+
+                // тягнемо тільки сесії для поточного користувача
+                val sessions = sessionRepository.getAllForUser(userId)
 
                 val items = sessions.map { s ->
                     val durationSeconds =
                         ((s.endTime - s.startTime).coerceAtLeast(0L)) / 1000L
+
                     HistoryItemUi(
                         id = s.id,
                         startTimeMillis = s.startTime,

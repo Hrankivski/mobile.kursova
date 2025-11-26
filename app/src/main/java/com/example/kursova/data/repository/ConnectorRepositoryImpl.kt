@@ -1,34 +1,37 @@
 package com.example.kursova.data.repository
 
 import com.example.kursova.data.local.dao.ConnectorDao
+import com.example.kursova.data.local.entity.ConnectorEntity
 import com.example.kursova.domain.model.Connector
 import com.example.kursova.domain.model.ConnectorStatus
 import com.example.kursova.domain.repository.ConnectorRepository
 
 class ConnectorRepositoryImpl(
-    private val connectorDao: ConnectorDao
+    private val dao: ConnectorDao
 ) : ConnectorRepository {
 
     override suspend fun getAll(): List<Connector> =
-        connectorDao.getAll().map {
-            Connector(
-                id = it.id,
-                name = it.name,
-                maxPowerKw = it.maxPowerKw,
-                status = it.status
-            )
-        }
+        dao.getAll().map { it.toDomain() }
 
     override suspend fun getAvailable(): List<Connector> =
-        getAll().filter { it.status == ConnectorStatus.AVAILABLE }
+        dao.getAll()
+            .filter { it.status == ConnectorStatus.AVAILABLE }
+            .map { it.toDomain() }
 
     override suspend fun getById(id: Int): Connector? =
-        connectorDao.getById(id)?.let {
-            Connector(
-                id = it.id,
-                name = it.name,
-                maxPowerKw = it.maxPowerKw,
-                status = it.status
-            )
-        }
+        dao.getById(id)?.toDomain()
+
+    override suspend fun updateStatus(id: Int, status: ConnectorStatus) {
+        val existing = dao.getById(id) ?: return
+        val updated = existing.copy(status = status)
+        dao.update(updated)
+    }
+
+    private fun ConnectorEntity.toDomain(): Connector =
+        Connector(
+            id = id,
+            name = name,
+            maxPowerKw = maxPowerKw,
+            status = status
+        )
 }

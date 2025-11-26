@@ -9,15 +9,18 @@ import com.example.kursova.data.local.entity.UserCardEntity
 @Dao
 interface UserCardDao {
 
-    @Query("SELECT * FROM user_cards")
-    suspend fun getAll(): List<UserCardEntity>
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(user: UserCardEntity): Long
 
-    @Query("SELECT * FROM user_cards WHERE id = :id")
-    suspend fun getById(id: Int): UserCardEntity?
+    @Query("SELECT * FROM user_cards WHERE login = :login LIMIT 1")
+    suspend fun getByLogin(login: String): UserCardEntity?
 
-    @Query("SELECT * FROM user_cards WHERE pinCode = :pin")
+    @Query("SELECT * FROM user_cards WHERE pinCode = :pin LIMIT 1")
     suspend fun getByPin(pin: String): UserCardEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(cards: List<UserCardEntity>)
+    @Query("SELECT COUNT(*) > 0 FROM user_cards WHERE login = :login")
+    suspend fun isLoginTaken(login: String): Boolean
+
+    @Query("SELECT * FROM user_cards")
+    suspend fun getAll(): List<UserCardEntity>
 }

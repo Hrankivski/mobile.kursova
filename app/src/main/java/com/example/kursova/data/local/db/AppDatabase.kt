@@ -17,7 +17,7 @@ import com.example.kursova.domain.model.ConnectorStatus
         TariffSettingsEntity::class,
         ChargingSessionEntity::class
     ],
-    version = 1
+    version = 2
 )
 @TypeConverters(ConnectorStatusConverter::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -32,12 +32,25 @@ abstract class AppDatabase : RoomDatabase() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
 
-                // User card
-                val userValues = ContentValues().apply {
+                // Admin user
+                val adminValues = ContentValues().apply {
                     put("id", 1)
+                    put("login", "admin")
+                    put("name", "Administrator")
+                    put("cardNumberMasked", "**** 0000")
+                    put("pinCode", "0000")
+                    put("isAdmin", 1)
+                }
+                db.insert("user_cards", SQLiteDatabase.CONFLICT_REPLACE, adminValues)
+
+                // Demo user
+                val userValues = ContentValues().apply {
+                    put("id", 2)
+                    put("login", "user")
                     put("name", "Demo User")
                     put("cardNumberMasked", "**** 1234")
                     put("pinCode", "1234")
+                    put("isAdmin", 0)
                 }
                 db.insert("user_cards", SQLiteDatabase.CONFLICT_REPLACE, userValues)
 

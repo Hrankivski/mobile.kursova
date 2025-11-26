@@ -21,4 +21,6 @@ interface ChargingSessionRepository {
     suspend fun getAll(): List<ChargingSession>
 
     suspend fun getById(id: Long): ChargingSession?
+
+    suspend fun getAllForUser(userId: Int): List<ChargingSession>
 }

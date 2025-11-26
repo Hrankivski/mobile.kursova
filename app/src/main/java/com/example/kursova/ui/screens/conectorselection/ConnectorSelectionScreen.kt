@@ -17,15 +17,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.CardDefaults
+import com.example.kursova.Graph
 
 @Composable
 fun ConnectorSelectionScreen(
-    userId: Int,
+    userId: Int? = null,
     onStartSession: (Long) -> Unit,
     onBack: () -> Unit
 ) {
-    // Для простоти створюємо VM через remember
-    val viewModel = remember { ConnectorSelectionViewModel(userId) }
+    val effectiveUserId = remember(userId) {
+        userId ?: Graph.currentUserId ?: 0
+    }
+    val viewModel = remember { ConnectorSelectionViewModel(effectiveUserId) }
     val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(state.createdSessionId) {
