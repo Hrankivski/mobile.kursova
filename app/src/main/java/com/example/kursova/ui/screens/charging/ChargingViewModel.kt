@@ -40,6 +40,10 @@ class ChargingViewModel(
     private var startTimeMillis: Long = 0L
     private var tariffSettings: TariffSettings? = null
 
+    // Фіксуємо тариф і ціну на момент старту
+    private var pricePerKwhInternal: Double = 0.0
+    private var tariffLabelInternal: String = ""
+
     init {
         loadInitialDataAndStartTimer()
     }
@@ -66,11 +70,35 @@ class ChargingViewModel(
                 val tariffs = tariffRepository.getSettings()
                 tariffSettings = tariffs
 
+                // Визначаємо годину старту сесії
+                val calendar = Calendar.getInstance().apply {
+                    timeInMillis = startTimeMillis
+                }
+                val hour = calendar.get(Calendar.HOUR_OF_DAY)
+
+                val isNight = isNightHour(
+                    hour,
+                    tariffs.nightStartHour,
+                    tariffs.nightEndHour
+                )
+
+                if (isNight) {
+                    pricePerKwhInternal = tariffs.nightPricePerKwh
+                    tariffLabelInternal = "NIGHT"
+                } else {
+                    pricePerKwhInternal = tariffs.dayPricePerKwh
+                    tariffLabelInternal = "DAY"
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRunning = true,
                     connectorName = connector?.name ?: "Unknown",
-                    powerKw = powerKwInternal
+                    powerKw = powerKwInternal,
+                    tariffLabel = tariffLabelInternal,
+                    elapsedSeconds = 0L,
+                    energyKwh = 0.0,
+                    totalPrice = 0.0
                 )
 
                 startTimer()
@@ -96,39 +124,21 @@ class ChargingViewModel(
                     powerKwInternal * (elapsed.toDouble() / 3600.0)
                 } else 0.0
 
-                val (pricePerKwh, tariffLabel) = calculateCurrentTariff()
-                val totalPrice = energy * pricePerKwh
+                val totalPrice = energy * pricePerKwhInternal
 
                 _uiState.value = _uiState.value.copy(
                     elapsedSeconds = elapsed,
                     energyKwh = energy,
                     totalPrice = totalPrice,
-                    tariffLabel = tariffLabel,
+                    tariffLabel = tariffLabelInternal,
                     isRunning = true
                 )
             }
         }
     }
 
-    private fun calculateCurrentTariff(): Pair<Double, String> {
-        val tariffs = tariffSettings ?: return 0.0 to ""
-        val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-
-        val isNight = isNightHour(
-            hour,
-            tariffs.nightStartHour,
-            tariffs.nightEndHour
-        )
-
-        return if (isNight) {
-            tariffs.nightPricePerKwh to "NIGHT"
-        } else {
-            tariffs.dayPricePerKwh to "DAY"
-        }
-    }
-
     private fun isNightHour(hour: Int, nightStart: Int, nightEnd: Int): Boolean {
+        // ніч може бути в межах одного дня (22–6) або "через північ"
         return if (nightStart <= nightEnd) {
             hour in nightStart until nightEnd
         } else {
@@ -148,6 +158,7 @@ class ChargingViewModel(
             val tariffLabel = if (finalState.tariffLabel.isBlank()) "DAY" else finalState.tariffLabel
 
             try {
+                // 1. оновлюємо сесію в локальній БД
                 sessionRepository.completeSession(
                     sessionId = sessionId,
                     endTime = endTime,
@@ -155,6 +166,14 @@ class ChargingViewModel(
                     totalPrice = finalState.totalPrice,
                     tariffUsed = tariffLabel
                 )
+
+                // 2. пробуємо синхронізувати всі несинхронізовані сесії з сервером
+                try {
+                    sessionRepository.syncUnsyncedSessions()
+                } catch (e: Exception) {
+                    // якщо немає мережі / сервер не відповів – не ламаємо UI
+                    // можна залогувати e.message або показати тост у майбутньому
+                }
 
                 _uiState.value = finalState.copy(
                     isCompleting = false,
@@ -169,4 +188,5 @@ class ChargingViewModel(
             }
         }
     }
+
 }

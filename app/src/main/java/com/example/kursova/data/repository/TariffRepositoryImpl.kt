@@ -26,4 +26,15 @@ class TariffRepositoryImpl(
             nightEndHour = entity.nightEndHour
         )
     }
+
+    override suspend fun saveSettings(settings: TariffSettings) {
+        val entity = TariffSettingsEntity(
+            id = settings.id,
+            dayPricePerKwh = settings.dayPricePerKwh,
+            nightPricePerKwh = settings.nightPricePerKwh,
+            nightStartHour = settings.nightStartHour,
+            nightEndHour = settings.nightEndHour
+        )
+        dao.insert(entity)
+    }
 }

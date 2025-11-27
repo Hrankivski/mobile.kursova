@@ -10,21 +10,47 @@ class ConnectorRepositoryImpl(
     private val dao: ConnectorDao
 ) : ConnectorRepository {
 
-    override suspend fun getAll(): List<Connector> =
-        dao.getAll().map { it.toDomain() }
+    override suspend fun getAll(): List<Connector> {
+        // 1. Читаємо все з БД
+        val existing = dao.getAll()
+
+        // 2. Якщо щось є – просто мапимо й повертаємо
+        if (existing.isNotEmpty()) {
+            return existing.map { it.toDomain() }
+        }
+
+        // 3. Якщо таблиця порожня – один раз створюємо дефолти
+        val defaults = listOf(
+            ConnectorEntity(
+                name = "CCS combo type2",
+                maxPowerKw = 22.0,
+                status = ConnectorStatus.AVAILABLE
+            ),
+            ConnectorEntity(
+                name = "CHAdeMO",
+                maxPowerKw = 11.0,
+                status = ConnectorStatus.AVAILABLE
+            ),
+            ConnectorEntity(
+                name = "Tesla",
+                maxPowerKw = 50.0,
+                status = ConnectorStatus.OUT_OF_ORDER
+            )
+        )
+
+        dao.insertAll(defaults)
+        return defaults.map { it.toDomain() }
+    }
 
     override suspend fun getAvailable(): List<Connector> =
-        dao.getAll()
-            .filter { it.status == ConnectorStatus.AVAILABLE }
-            .map { it.toDomain() }
+        getAll().filter { it.status == ConnectorStatus.AVAILABLE }
 
     override suspend fun getById(id: Int): Connector? =
         dao.getById(id)?.toDomain()
 
     override suspend fun updateStatus(id: Int, status: ConnectorStatus) {
-        val existing = dao.getById(id) ?: return
-        val updated = existing.copy(status = status)
-        dao.update(updated)
+        val entity = dao.getById(id) ?: return
+        dao.update(entity.copy(status = status))
     }
 
     private fun ConnectorEntity.toDomain(): Connector =

@@ -17,7 +17,7 @@ import com.example.kursova.domain.model.ConnectorStatus
         TariffSettingsEntity::class,
         ChargingSessionEntity::class
     ],
-    version = 2
+    version = 3
 )
 @TypeConverters(ConnectorStatusConverter::class)
 abstract class AppDatabase : RoomDatabase() {

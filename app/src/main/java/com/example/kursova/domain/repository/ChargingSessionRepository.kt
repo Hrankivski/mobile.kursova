@@ -23,4 +23,6 @@ interface ChargingSessionRepository {
     suspend fun getById(id: Long): ChargingSession?
 
     suspend fun getAllForUser(userId: Int): List<ChargingSession>
+
+    suspend fun syncUnsyncedSessions()
 }

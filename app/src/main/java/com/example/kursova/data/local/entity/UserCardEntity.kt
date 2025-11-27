@@ -10,5 +10,6 @@ data class UserCardEntity(
     val name: String,
     val cardNumberMasked: String,
     val pinCode: String,
-    val isAdmin: Boolean = false
+    val isAdmin: Boolean = false,
+    val isSynced: Boolean = false
 )
