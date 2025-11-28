@@ -1,7 +1,5 @@
-package com.example.kursova.ui.screens.connectorselection
+package com.example.kursova.ui.screens.service
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,22 +7,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.kursova.core.util.TimeUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConnectorSelectionScreen(
-    onStartSession: (Long) -> Unit,
+fun AdminLogsScreen(
     onBack: () -> Unit
 ) {
-    val viewModel = remember { ConnectorSelectionViewModel() }
+    val viewModel = remember { AdminLogsViewModel() }
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Select connector") }
+                title = { Text("Charging logs") }
             )
         }
     ) { innerPadding ->
@@ -55,7 +52,7 @@ fun ConnectorSelectionScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { /* можна викликати viewModel.loadConnectors(), якщо зробиш його public */ }) {
+                        Button(onClick = { /* перезавантажити */ }) {
                             Text("Retry")
                         }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -65,48 +62,40 @@ fun ConnectorSelectionScreen(
                     }
                 }
 
-                else -> {
+                state.items.isEmpty() -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.SpaceBetween
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Наразі немає жодної сесії зарядки")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(onClick = onBack) {
+                            Text("Back")
+                        }
+                    }
+                }
+
+                else -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         LazyColumn(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(state.connectors) { item ->
-                                ConnectorRow(
-                                    item = item,
-                                    onClick = { viewModel.onConnectorClick(item.id) }
-                                )
+                            items(state.items) { item ->
+                                AdminLogCard(item = item)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        OutlinedButton(
+                            onClick = onBack,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
-                            OutlinedButton(
-                                onClick = onBack,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Back")
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(
-                                onClick = {
-                                    viewModel.startSession { sessionId ->
-                                        onStartSession(sessionId)
-                                    }
-                                },
-                                enabled = !state.isStarting &&
-                                        state.connectors.any { it.isSelected },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(if (state.isStarting) "Starting..." else "Start charging")
-                            }
+                            Text("Back")
                         }
                     }
                 }
@@ -116,41 +105,37 @@ fun ConnectorSelectionScreen(
 }
 
 @Composable
-private fun ConnectorRow(
-    item: ConnectorItemUi,
-    onClick: () -> Unit
+private fun AdminLogCard(
+    item: AdminLogItemUi
 ) {
-    val bgColor: Color =
-        if (item.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        else MaterialTheme.colorScheme.surface
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(bgColor)
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = item.name,
+                text = "User: ${item.userName} (${item.userLogin})",
                 style = MaterialTheme.typography.titleMedium
             )
+
             Text(
-                text = "Max power: %.1f kW".format(item.maxPowerKw),
+                text = "Energy: %.2f kWh".format(item.energyKwh),
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+                text = "Price: %.2f грн".format(item.totalPrice),
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+                text = "Duration: ${TimeUtils.formatDuration(item.durationSeconds)}",
                 style = MaterialTheme.typography.bodySmall
             )
-            if (item.isSelected) {
-                Text(
-                    text = "Selected",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
         }
     }
 }

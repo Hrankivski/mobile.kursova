@@ -1,7 +1,5 @@
-package com.example.kursova.ui.screens.connectorselection
+package com.example.kursova.ui.screens.service
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,22 +7,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.kursova.domain.model.ConnectorStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConnectorSelectionScreen(
-    onStartSession: (Long) -> Unit,
+fun ManageConnectorsScreen(
     onBack: () -> Unit
 ) {
-    val viewModel = remember { ConnectorSelectionViewModel() }
+    val viewModel = remember { ManageConnectorsViewModel() }
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Select connector") }
+                title = { Text("Manage connectors") }
             )
         }
     ) { innerPadding ->
@@ -55,7 +52,7 @@ fun ConnectorSelectionScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { /* можна викликати viewModel.loadConnectors(), якщо зробиш його public */ }) {
+                        Button(onClick = { viewModel.load() }) {
                             Text("Retry")
                         }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -70,15 +67,31 @@ fun ConnectorSelectionScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        LazyColumn(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f, fill = true)
                         ) {
-                            items(state.connectors) { item ->
-                                ConnectorRow(
-                                    item = item,
-                                    onClick = { viewModel.onConnectorClick(item.id) }
+                            if (state.saveMessage != null) {
+                                Text(
+                                    text = state.saveMessage!!,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodySmall
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(state.connectors) { item ->
+                                    ConnectorCard(
+                                        item = item,
+                                        onStatusChange = { newStatus ->
+                                            viewModel.onStatusChange(item.id, newStatus)
+                                        }
+                                    )
+                                }
                             }
                         }
 
@@ -94,18 +107,15 @@ fun ConnectorSelectionScreen(
                             ) {
                                 Text("Back")
                             }
+
                             Spacer(modifier = Modifier.width(8.dp))
+
                             Button(
-                                onClick = {
-                                    viewModel.startSession { sessionId ->
-                                        onStartSession(sessionId)
-                                    }
-                                },
-                                enabled = !state.isStarting &&
-                                        state.connectors.any { it.isSelected },
+                                onClick = { viewModel.saveChanges() },
+                                enabled = !state.isSaving,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text(if (state.isStarting) "Starting..." else "Start charging")
+                                Text(if (state.isSaving) "Saving..." else "Save changes")
                             }
                         }
                     }
@@ -116,23 +126,16 @@ fun ConnectorSelectionScreen(
 }
 
 @Composable
-private fun ConnectorRow(
-    item: ConnectorItemUi,
-    onClick: () -> Unit
+private fun ConnectorCard(
+    item: ConnectorItemUiState,
+    onStatusChange: (ConnectorStatus) -> Unit
 ) {
-    val bgColor: Color =
-        if (item.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        else MaterialTheme.colorScheme.surface
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(bgColor)
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -140,17 +143,57 @@ private fun ConnectorRow(
                 text = item.name,
                 style = MaterialTheme.typography.titleMedium
             )
+
             Text(
-                text = "Max power: %.1f kW".format(item.maxPowerKw),
+                text = String.format("Max power: %.1f kW", item.maxPowerKw),
                 style = MaterialTheme.typography.bodySmall
             )
-            if (item.isSelected) {
-                Text(
-                    text = "Selected",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Status:",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatusChip(
+                    label = "Available",
+                    selected = item.status == ConnectorStatus.AVAILABLE,
+                    onClick = { onStatusChange(ConnectorStatus.AVAILABLE) }
+                )
+                StatusChip(
+                    label = "Busy",
+                    selected = item.status == ConnectorStatus.BUSY,
+                    onClick = { onStatusChange(ConnectorStatus.BUSY) }
+                )
+                StatusChip(
+                    label = "Out of order",
+                    selected = item.status == ConnectorStatus.OUT_OF_ORDER,
+                    onClick = { onStatusChange(ConnectorStatus.OUT_OF_ORDER) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    if (selected) {
+        Button(onClick = onClick) {
+            Text(label)
+        }
+    } else {
+        OutlinedButton(onClick = onClick) {
+            Text(label)
         }
     }
 }

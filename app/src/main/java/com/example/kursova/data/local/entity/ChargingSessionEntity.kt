@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "charging_sessions")
 data class ChargingSessionEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val userCardId: Int,
     val connectorId: Int,
     val startTime: Long,
@@ -13,6 +13,5 @@ data class ChargingSessionEntity(
     val energyKwh: Double,
     val totalPrice: Double,
     val tariffUsed: String,
-    val syncStatus: String = "LOCAL_ONLY",
-    val remoteId: Long? = null
+    val isSynced: Boolean = false
 )
