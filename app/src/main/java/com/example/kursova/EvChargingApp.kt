@@ -3,6 +3,7 @@ package com.example.kursova
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import com.example.kursova.core.connection.ConnectionState
 import com.example.kursova.data.local.db.AppDatabase
 import com.example.kursova.data.repository.ChargingSessionRepositoryImpl
 import com.example.kursova.data.repository.ConnectorRepositoryImpl
@@ -14,6 +15,11 @@ import com.example.kursova.domain.repository.TariffRepository
 import com.example.kursova.domain.repository.UserCardRepository
 import com.example.kursova.data.remote.EvChargingApiService
 import com.example.kursova.data.remote.RemoteChargingSessionDataSource
+import com.example.kursova.data.remote.RemoteConnectorDataSource
+import com.example.kursova.data.remote.RemoteTariffDataSource
+import com.example.kursova.data.remote.RemoteUserDataSource
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -49,9 +55,17 @@ object Graph {
     lateinit var apiService: com.example.kursova.data.remote.EvChargingApiService
     lateinit var remoteChargingSessionDataSource: com.example.kursova.data.remote.RemoteChargingSessionDataSource
 
+    lateinit var remoteUserDataSource: RemoteUserDataSource
+    lateinit var remoteTariffDataSource: RemoteTariffDataSource
+    lateinit var remoteConnectorDataSource: RemoteConnectorDataSource
+
+
 
     var currentUserId: Int? = null
     var currentUserIsAdmin: Boolean = false
+
+    private val _connectionState = MutableStateFlow(ConnectionState.OFFLINE)
+    val connectionState: StateFlow<ConnectionState> = _connectionState
 
     fun provide(appContext: Context) {
         // --- Room ---
@@ -81,19 +95,37 @@ object Graph {
             .build()
 
         apiService = retrofit.create(EvChargingApiService::class.java)
-        remoteChargingSessionDataSource = RemoteChargingSessionDataSource(apiService)
 
-        // --- Repositories (як у тебе було) ---
-        userCardRepository = UserCardRepositoryImpl(database.userCardDao())
-        connectorRepository = ConnectorRepositoryImpl(database.connectorDao())
+        remoteChargingSessionDataSource = RemoteChargingSessionDataSource(apiService)
+        remoteUserDataSource = RemoteUserDataSource(apiService)
+        remoteTariffDataSource = RemoteTariffDataSource(apiService)
+        remoteConnectorDataSource = RemoteConnectorDataSource(apiService)
+
+        userCardRepository = UserCardRepositoryImpl(
+            dao = database.userCardDao(),
+            remote = remoteUserDataSource
+        )
+        tariffRepository = TariffRepositoryImpl(
+            dao = database.tariffSettingsDao(),
+            //remote = remoteTariffDataSource
+        )
+        connectorRepository = ConnectorRepositoryImpl(
+            dao = database.connectorDao(),
+            remote = remoteConnectorDataSource
+        )
         chargingSessionRepository =
             ChargingSessionRepositoryImpl(
                 dao = database.chargingSessionDao(),
                 remote = remoteChargingSessionDataSource
             )
-        tariffRepository = TariffRepositoryImpl(database.tariffSettingsDao())
-
         currentUserId = null
     }
 
+    fun markOnline() {
+        _connectionState.value = ConnectionState.ONLINE
+    }
+
+    fun markOffline() {
+        _connectionState.value = ConnectionState.OFFLINE
+    }
 }

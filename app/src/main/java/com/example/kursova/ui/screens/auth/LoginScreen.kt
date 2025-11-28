@@ -1,20 +1,16 @@
 package com.example.kursova.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.kursova.domain.model.UserCard
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (UserCard) -> Unit,
     onGoToSignUp: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -32,37 +28,43 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Log in",
+                text = "User login",
                 style = MaterialTheme.typography.titleLarge
             )
 
             OutlinedTextField(
                 value = state.login,
-                onValueChange = viewModel::onLoginChange,
-                label = { Text("Login") },
-                singleLine = true
+                onValueChange = { viewModel.onLoginChange(it) },
+                label = { Text("Login") }
             )
 
             OutlinedTextField(
                 value = state.pin,
-                onValueChange = viewModel::onPinChange,
-                label = { Text("PIN (4 digits)") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                onValueChange = { viewModel.onPinChange(it) },
+                label = { Text("PIN code") }
             )
 
             if (state.error != null) {
                 Text(
-                    text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error
+                    text = state.error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
+            if (state.isLoading) {
+                CircularProgressIndicator()
+            }
+
             Button(
-                onClick = { viewModel.onSubmit(onLoginSuccess) },
+                onClick = {
+                    viewModel.login { user ->
+                        onLoginSuccess(user)
+                    }
+                },
                 enabled = !state.isLoading
             ) {
-                Text(if (state.isLoading) "Logging in..." else "Log in")
+                Text("Login")
             }
 
             OutlinedButton(onClick = onGoToSignUp) {

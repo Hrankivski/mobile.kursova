@@ -5,6 +5,5 @@ data class UserCard(
     val login: String,
     val name: String,
     val cardNumberMasked: String,
-    val pinCode: String,
     val isAdmin: Boolean
 )

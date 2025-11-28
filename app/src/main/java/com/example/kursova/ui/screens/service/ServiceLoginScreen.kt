@@ -1,27 +1,21 @@
 package com.example.kursova.ui.screens.service
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.kursova.domain.model.UserCard
 
 @Composable
 fun ServiceLoginScreen(
-    onServiceLoginSuccess: () -> Unit,
+    onServiceLoginSuccess: (UserCard) -> Unit,
     onBack: () -> Unit
 ) {
     val viewModel = remember { ServiceLoginViewModel() }
@@ -38,37 +32,43 @@ fun ServiceLoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Service mode login",
+                text = "Service / Admin login",
                 style = MaterialTheme.typography.titleLarge
             )
 
             OutlinedTextField(
                 value = state.login,
-                onValueChange = viewModel::onLoginChange,
-                label = { Text("Admin login") },
-                singleLine = true
+                onValueChange = { viewModel.onLoginChange(it) },
+                label = { Text("Login") }
             )
 
             OutlinedTextField(
                 value = state.pin,
-                onValueChange = viewModel::onPinChange,
-                label = { Text("Admin PIN (4 digits)") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                onValueChange = { viewModel.onPinChange(it) },
+                label = { Text("PIN") }
             )
 
             if (state.error != null) {
                 Text(
-                    text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error
+                    text = state.error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
+            if (state.isLoading) {
+                CircularProgressIndicator()
+            }
+
             Button(
-                onClick = { viewModel.onSubmit(onServiceLoginSuccess) },
+                onClick = {
+                    viewModel.login { adminUser ->
+                        onServiceLoginSuccess(adminUser)
+                    }
+                },
                 enabled = !state.isLoading
             ) {
-                Text(if (state.isLoading) "Checking..." else "Log in as admin")
+                Text("Login as admin")
             }
 
             OutlinedButton(onClick = onBack) {

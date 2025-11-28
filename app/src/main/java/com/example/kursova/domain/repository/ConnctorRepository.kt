@@ -7,5 +7,8 @@ interface ConnectorRepository {
     suspend fun getAll(): List<Connector>
     suspend fun getAvailable(): List<Connector>
     suspend fun getById(id: Int): Connector?
+
     suspend fun updateStatus(id: Int, status: ConnectorStatus)
+
+    suspend fun syncConnectorsToServer()
 }

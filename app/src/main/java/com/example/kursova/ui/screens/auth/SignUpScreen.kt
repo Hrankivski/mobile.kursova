@@ -1,15 +1,10 @@
 package com.example.kursova.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -31,44 +26,49 @@ fun SignUpScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Sign up",
+                text = "Create account",
                 style = MaterialTheme.typography.titleLarge
             )
 
             OutlinedTextField(
                 value = state.login,
-                onValueChange = viewModel::onLoginChange,
-                label = { Text("Login") },
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = state.name,
-                onValueChange = viewModel::onNameChange,
-                label = { Text("Name") },
-                singleLine = true
+                onValueChange = { viewModel.onLoginChange(it) },
+                label = { Text("Login") }
             )
 
             OutlinedTextField(
                 value = state.pin,
-                onValueChange = viewModel::onPinChange,
-                label = { Text("PIN (4 digits)") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                onValueChange = { viewModel.onPinChange(it) },
+                label = { Text("PIN code") }
+            )
+
+            OutlinedTextField(
+                value = state.name,
+                onValueChange = { viewModel.onNameChange(it) },
+                label = { Text("Name") }
             )
 
             if (state.error != null) {
                 Text(
-                    text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error
+                    text = state.error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
+            if (state.isLoading) {
+                CircularProgressIndicator()
+            }
+
             Button(
-                onClick = { viewModel.onSubmit(onSignUpSuccess) },
+                onClick = {
+                    viewModel.signUp {
+                        onSignUpSuccess()
+                    }
+                },
                 enabled = !state.isLoading
             ) {
-                Text(if (state.isLoading) "Creating..." else "Create account")
+                Text("Sign up")
             }
 
             OutlinedButton(onClick = onGoToLogin) {

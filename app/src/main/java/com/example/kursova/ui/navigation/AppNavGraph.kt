@@ -6,6 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.kursova.Graph
+import com.example.kursova.domain.model.UserCard
 import com.example.kursova.ui.screens.charging.ChargingScreen
 import com.example.kursova.ui.screens.connectorselection.ConnectorSelectionScreen
 import com.example.kursova.ui.screens.history.HistoryScreen
@@ -17,22 +19,23 @@ import com.example.kursova.ui.screens.service.ServiceLoginScreen
 import com.example.kursova.ui.screens.service.ServiceHomeScreen
 import com.example.kursova.ui.screens.service.ManageConnectorsScreen
 import com.example.kursova.ui.screens.service.AdminLogsScreen
+import com.example.kursova.ui.screens.service.EditTariffsScreen
 
 object Routes {
     const val WELCOME = "welcome"
-    const val AUTH = "auth"                // тепер: LoginScreen
-    const val SIGN_UP = "sign_up"          // новий маршрут для SignUpScreen
+    const val AUTH = "auth"
+    const val SIGN_UP = "sign_up"
     const val CONNECTOR_SELECTION = "connectorSelection"
     const val CHARGING = "charging"
     const val SUMMARY = "summary"
     const val HISTORY = "history"
 
-    const val ADMIN = "admin"              // тепер: ServiceLoginScreen
+    const val ADMIN = "admin"
     const val SERVICE_HOME = "service_home"
     const val MANAGE_CONNECTORS = "manage_connectors"
     const val ADMIN_LOGS = "admin_logs"
-
-    const val ARG_USER_ID = "userId"       // більше не використовуємо в навігації, лишив для сумісності
+    const val EDIT_TARIFFS = "edit_tariffs"
+    //const val ARG_USER_ID = "userId"
     const val ARG_SESSION_ID = "sessionId"
 }
 
@@ -57,7 +60,8 @@ fun AppNavGraph() {
         composable(Routes.AUTH) {
             LoginScreen(
                 onLoginSuccess = {
-                    // після успішного логіну переходимо до вибору конектора
+                    user: UserCard ->
+                    Graph.currentUserId = user.id
                     navController.navigate(Routes.CONNECTOR_SELECTION)
                 },
                 onGoToSignUp = {
@@ -162,8 +166,8 @@ fun AppNavGraph() {
                     navController.navigate(Routes.MANAGE_CONNECTORS)
                 },
                 onEditTariffs = {
-                    // коли з'явиться EditTariffsScreen — сюди ж повісимо navigate(Routes.EDIT_TARIFFS)
-                    // поки що можна або залишити TODO, або зробити заглушку
+                    navController.navigate(Routes.EDIT_TARIFFS)
+
                 },
                 onViewLogs = {
                     navController.navigate(Routes.ADMIN_LOGS)
@@ -184,6 +188,13 @@ fun AppNavGraph() {
         // ---------------- SERVICE MODE: ADMIN LOGS ----------------
         composable(Routes.ADMIN_LOGS) {
             AdminLogsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ---------------- SERVICE MODE: EDIT TARIFFS ----------------
+        composable(Routes.EDIT_TARIFFS) {
+            EditTariffsScreen(
                 onBack = { navController.popBackStack() }
             )
         }

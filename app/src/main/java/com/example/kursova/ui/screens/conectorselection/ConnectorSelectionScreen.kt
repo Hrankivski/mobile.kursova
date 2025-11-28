@@ -5,23 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.kursova.domain.model.ConnectorStatus
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConnectorSelectionScreen(
     onStartSession: (Long) -> Unit,
@@ -30,77 +21,92 @@ fun ConnectorSelectionScreen(
     val viewModel = remember { ConnectorSelectionViewModel() }
     val state by viewModel.uiState.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            state.error != null -> {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = state.error ?: "Error",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    OutlinedButton(onClick = onBack) {
-                        Text("Back")
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Select connector") }
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
-            }
 
-            else -> {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = "Select connector",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    // список конекторів з усіма деталями
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                state.error != null -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(state.connectors) { item ->
-                            ConnectorRow(
-                                item = item,
-                                onClick = { viewModel.onSelectConnector(item.id) }
-                            )
+                        Text(
+                            text = state.error ?: "Error",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { /* можна викликати viewModel.loadConnectors(), якщо зробиш його public */ }) {
+                            Text("Retry")
                         }
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedButton(
-                            onClick = onBack,
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(onClick = onBack) {
                             Text("Back")
                         }
-                        Button(
-                            onClick = { viewModel.startSession(onStartSession) },
-                            enabled = state.selectedConnectorId != null,
-                            modifier = Modifier.weight(1f)
+                    }
+                }
+
+                else -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Start charging")
+                            items(state.connectors) { item ->
+                                ConnectorRow(
+                                    item = item,
+                                    onClick = { viewModel.onConnectorClick(item.id) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            OutlinedButton(
+                                onClick = onBack,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Back")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.startSession { sessionId ->
+                                        onStartSession(sessionId)
+                                    }
+                                },
+                                enabled = !state.isStarting &&
+                                        state.connectors.any { it.isSelected },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(if (state.isStarting) "Starting..." else "Start charging")
+                            }
                         }
                     }
                 }
@@ -114,70 +120,35 @@ private fun ConnectorRow(
     item: ConnectorItemUi,
     onClick: () -> Unit
 ) {
-    // підсвічуємо вибраний конектор
-    val backgroundColor =
-        if (item.isSelected)
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-        else
-            Color.Transparent
+    val bgColor: Color =
+        if (item.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        else MaterialTheme.colorScheme.surface
 
-    val statusText = when (item.status) {
-        ConnectorStatus.AVAILABLE -> "Available"
-        ConnectorStatus.BUSY -> "Busy"
-        ConnectorStatus.OUT_OF_ORDER -> "Out of order"
-    }
-
-    val statusColor = when (item.status) {
-        ConnectorStatus.AVAILABLE -> MaterialTheme.colorScheme.primary
-        ConnectorStatus.BUSY -> MaterialTheme.colorScheme.tertiary
-        ConnectorStatus.OUT_OF_ORDER -> MaterialTheme.colorScheme.error
-    }
-
-    Surface(
-        tonalElevation = if (item.isSelected) 2.dp else 0.dp,
-        shadowElevation = if (item.isSelected) 2.dp else 0.dp,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .background(backgroundColor)
-            .clickable(
-                enabled = item.status == ConnectorStatus.AVAILABLE,
-                onClick = onClick
-            )
+            .clickable(onClick = onClick)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(bgColor)
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            RadioButton(
-                selected = item.isSelected,
-                onClick = onClick,
-                enabled = item.status == ConnectorStatus.AVAILABLE
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleMedium
             )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // Головний текст – НАЗВА порта
+            Text(
+                text = "Max power: %.1f kW".format(item.maxPowerKw),
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (item.isSelected) {
                 Text(
-                    text = if (item.name.isNotBlank()) item.name else "Unnamed connector",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                // Додатково показуємо id та потужність
-                Text(
-                    text = "ID: ${item.id}, Power: ${"%.1f".format(item.powerKw)} kW",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                // Статус з кольором
-                Text(
-                    text = statusText,
-                    color = statusColor,
-                    style = MaterialTheme.typography.bodySmall
+                    text = "Selected",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

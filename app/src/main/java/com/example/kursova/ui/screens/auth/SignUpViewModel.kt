@@ -3,42 +3,41 @@ package com.example.kursova.ui.screens.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kursova.Graph
-import com.example.kursova.domain.repository.UserCardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 data class SignUpUiState(
     val login: String = "",
-    val name: String = "",
     val pin: String = "",
+    val name: String = "",
     val isLoading: Boolean = false,
     val error: String? = null
 )
 
-class SignUpViewModel(
-    private val userRepo: UserCardRepository = Graph.userCardRepository
-) : ViewModel() {
+class SignUpViewModel : ViewModel() {
+
+    private val userRepo = Graph.userCardRepository
 
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState: StateFlow<SignUpUiState> = _uiState
 
-    fun onLoginChange(v: String) {
-        _uiState.value = _uiState.value.copy(login = v, error = null)
+    fun onLoginChange(value: String) {
+        _uiState.value = _uiState.value.copy(login = value, error = null)
     }
 
-    fun onNameChange(v: String) {
-        _uiState.value = _uiState.value.copy(name = v, error = null)
+    fun onPinChange(value: String) {
+        _uiState.value = _uiState.value.copy(pin = value, error = null)
     }
 
-    fun onPinChange(v: String) {
-        _uiState.value = _uiState.value.copy(pin = v, error = null)
+    fun onNameChange(value: String) {
+        _uiState.value = _uiState.value.copy(name = value, error = null)
     }
 
-    fun onSubmit(onSuccess: () -> Unit) {
+    fun signUp(onSuccess: () -> Unit) {
         val state = _uiState.value
-        if (state.login.isBlank() || state.name.isBlank() || state.pin.length != 4) {
-            _uiState.value = state.copy(error = "Fill all fields, PIN must be 4 digits")
+        if (state.login.isBlank() || state.pin.isBlank() || state.name.isBlank()) {
+            _uiState.value = state.copy(error = "All fields are required")
             return
         }
 
@@ -46,28 +45,24 @@ class SignUpViewModel(
             try {
                 _uiState.value = state.copy(isLoading = true, error = null)
 
-                if (userRepo.isLoginTaken(state.login)) {
-                    _uiState.value = state.copy(
-                        isLoading = false,
-                        error = "Login already exists"
-                    )
-                    return@launch
-                }
-
-                val id = userRepo.createUser(
+                // 1) створюємо локального користувача
+                userRepo.signUp(
                     login = state.login,
-                    name = state.name,
                     pinCode = state.pin,
-                    isAdmin = false
+                    name = state.name
                 )
 
-                Graph.currentUserId = id
-                Graph.currentUserIsAdmin = false
+                // 2) пробуємо відвантажити на сервер
+                try {
+                    userRepo.syncUsersUp()
+                } catch (_: Exception) {
+                    // якщо сервер недоступний, користувач все одно є локально
+                }
 
-                _uiState.value = state.copy(isLoading = false)
+                _uiState.value = _uiState.value.copy(isLoading = false, error = null)
                 onSuccess()
             } catch (e: Exception) {
-                _uiState.value = state.copy(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Sign up failed"
                 )

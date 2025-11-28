@@ -6,5 +6,7 @@ interface TariffRepository {
 
     suspend fun getSettings(): TariffSettings
 
-    suspend fun saveSettings(settings: TariffSettings)
+    suspend fun updateSettings(settings: TariffSettings)
+
+    suspend fun refreshFromServer()
 }

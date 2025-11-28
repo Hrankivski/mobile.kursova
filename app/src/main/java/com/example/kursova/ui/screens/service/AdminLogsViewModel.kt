@@ -3,6 +3,7 @@ package com.example.kursova.ui.screens.service
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kursova.Graph
+import com.example.kursova.domain.model.UserCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -39,11 +40,17 @@ class AdminLogsViewModel : ViewModel() {
     private fun load() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true,
+                    error = null
+                )
 
+                // всі сесії із локальної БД
                 val sessions = sessionsRepo.getAll()
-                val users = userRepo.getAll()
-                val usersById = users.associateBy { it.id }
+
+                // всі користувачі із локальної БД
+                val users: List<UserCard> = userRepo.getAllLocal()
+                val usersById: Map<Int, UserCard> = users.associateBy { it.id }
 
                 val items = sessions.map { s ->
                     val user = usersById[s.userCardId]
@@ -64,12 +71,14 @@ class AdminLogsViewModel : ViewModel() {
 
                 _uiState.value = AdminLogsUiState(
                     isLoading = false,
-                    items = items
+                    items = items,
+                    error = null
                 )
             } catch (e: Exception) {
                 _uiState.value = AdminLogsUiState(
                     isLoading = false,
-                    error = e.message ?: "Failed to load logs"
+                    error = e.message ?: "Failed to load logs",
+                    items = emptyList()
                 )
             }
         }

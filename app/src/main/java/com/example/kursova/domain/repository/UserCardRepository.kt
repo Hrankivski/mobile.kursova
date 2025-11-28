@@ -4,18 +4,22 @@ import com.example.kursova.domain.model.UserCard
 
 interface UserCardRepository {
 
-    suspend fun getByLogin(login: String): UserCard?
-
-    suspend fun isLoginTaken(login: String): Boolean
-
-    suspend fun createUser(
+    suspend fun signUp(
         login: String,
-        name: String,
         pinCode: String,
-        isAdmin: Boolean = false
+        name: String
     ): Int
 
-    suspend fun getAll(): List<UserCard>
+    suspend fun authenticate(
+        login: String,
+        pinCode: String
+    ): UserCard?
 
-    suspend fun authenticateByPin(pin: String): UserCard?
+    suspend fun authenticateByPin(pinCode: String): UserCard?
+
+    suspend fun getAllLocal(): List<UserCard>
+
+    suspend fun syncUsersUp()
+
+    suspend fun syncUsersDown()
 }

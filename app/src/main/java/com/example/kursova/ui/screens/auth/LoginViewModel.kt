@@ -3,7 +3,7 @@ package com.example.kursova.ui.screens.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kursova.Graph
-import com.example.kursova.domain.repository.UserCardRepository
+import com.example.kursova.domain.model.UserCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -15,9 +15,9 @@ data class LoginUiState(
     val error: String? = null
 )
 
-class LoginViewModel(
-    private val userRepo: UserCardRepository = Graph.userCardRepository
-) : ViewModel() {
+class LoginViewModel : ViewModel() {
+
+    private val userRepo = Graph.userCardRepository
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState
@@ -30,33 +30,37 @@ class LoginViewModel(
         _uiState.value = _uiState.value.copy(pin = value, error = null)
     }
 
-    fun onSubmit(onSuccess: () -> Unit) {
+    fun login(onSuccess: (UserCard) -> Unit) {
         val state = _uiState.value
-        if (state.login.isBlank() || state.pin.length != 4) {
-            _uiState.value = state.copy(error = "Enter login and 4-digit PIN")
+        if (state.login.isBlank() || state.pin.isBlank()) {
+            _uiState.value = state.copy(error = "Login and PIN are required")
             return
         }
 
         viewModelScope.launch {
             try {
                 _uiState.value = state.copy(isLoading = true, error = null)
-                val user = userRepo.getByLogin(state.login)
 
-                if (user == null || user.pinCode != state.pin) {
-                    _uiState.value = state.copy(
+                // 1) перед логіном пробуємо підтягнути користувачів із сервера
+                try {
+                    userRepo.syncUsersDown()
+                } catch (_: Exception) {
+                    // можна проігнорити помилку синку, логін все одно спробуємо локально
+                }
+
+                // 2) логін по локальній БД
+                val user = userRepo.authenticate(state.login, state.pin)
+                if (user == null) {
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Invalid login or PIN"
                     )
-                    return@launch
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = null)
+                    onSuccess(user)
                 }
-
-                Graph.currentUserId = user.id
-                Graph.currentUserIsAdmin = user.isAdmin
-
-                _uiState.value = state.copy(isLoading = false)
-                onSuccess()
             } catch (e: Exception) {
-                _uiState.value = state.copy(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Login failed"
                 )

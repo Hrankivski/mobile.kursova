@@ -1,13 +1,13 @@
 package com.example.kursova.data.repository
 
+import android.util.Log
+import com.example.kursova.Graph
 import com.example.kursova.data.local.dao.ChargingSessionDao
 import com.example.kursova.data.local.entity.ChargingSessionEntity
 import com.example.kursova.data.remote.RemoteChargingSessionDataSource
 import com.example.kursova.data.remote.dto.ChargingSessionSyncDto
 import com.example.kursova.domain.model.ChargingSession
 import com.example.kursova.domain.repository.ChargingSessionRepository
-import android.util.Log
-
 
 class ChargingSessionRepositoryImpl(
     private val dao: ChargingSessionDao,
@@ -19,7 +19,10 @@ class ChargingSessionRepositoryImpl(
         connectorId: Int,
         startTime: Long
     ): Long {
+        // ВАЖЛИВО: використовуємо саме userCardId, який прийшов параметром
+        // і НЕ чіпаємо тут Graph.currentUserId, щоб не було прихованих залежностей.
         val entity = ChargingSessionEntity(
+            id = 0L,                    // Room сам поставить новий PK
             userCardId = userCardId,
             connectorId = connectorId,
             startTime = startTime,
@@ -29,6 +32,12 @@ class ChargingSessionRepositoryImpl(
             tariffUsed = "UNKNOWN",
             isSynced = false
         )
+
+        Log.d(
+            "ChargingSessionRepo",
+            "createSession(): userCardId=$userCardId, connectorId=$connectorId, startTime=$startTime"
+        )
+
         return dao.insert(entity)
     }
 
@@ -39,14 +48,23 @@ class ChargingSessionRepositoryImpl(
         totalPrice: Double,
         tariffUsed: String
     ) {
-        val existing = dao.getById(sessionId) ?: return
+        val existing = dao.getById(sessionId)
+        if (existing == null) {
+            Log.w("ChargingSessionRepo", "completeSession(): session $sessionId not found")
+            return
+        }
 
         val updated = existing.copy(
             endTime = endTime,
             energyKwh = energyKwh,
             totalPrice = totalPrice,
             tariffUsed = tariffUsed,
-            isSynced = false
+            isSynced = false           // після змін позначаємо як не синхронізовану
+        )
+
+        Log.d(
+            "ChargingSessionRepo",
+            "completeSession(): sessionId=$sessionId, energy=$energyKwh, totalPrice=$totalPrice, tariff=$tariffUsed"
         )
 
         dao.insert(updated)
@@ -55,13 +73,16 @@ class ChargingSessionRepositoryImpl(
     override suspend fun getAll(): List<ChargingSession> =
         dao.getAll().map { it.toDomain() }
 
-    // 🔹 реалізація пропущеного методу
     override suspend fun getAllForUser(userId: Int): List<ChargingSession> =
         dao.getAllForUser(userId).map { it.toDomain() }
 
     override suspend fun getById(id: Long): ChargingSession? =
         dao.getById(id)?.toDomain()
 
+    /**
+     * Синхронізація всіх несинхронізованих сесій на сервер.
+     * Після успішної відповіді від сервера позначаємо їх як isSynced = true.
+     */
     override suspend fun syncUnsyncedSessions() {
         val notSynced = dao.getNotSynced()
         if (notSynced.isEmpty()) {
@@ -86,9 +107,13 @@ class ChargingSessionRepositoryImpl(
 
         try {
             val response = remote.syncSessions(dtos)
-            Log.d("SyncDebug", "Server response: success=${response.success}, mapped=${response.mapped?.size ?: 0}")
+            Log.d(
+                "SyncDebug",
+                "Server response: success=${response.success}, mapped=${response.mapped?.size ?: 0}"
+            )
 
             if (!response.success || response.mapped.isNullOrEmpty()) {
+                Graph.markOnline()
                 return
             }
 
@@ -102,13 +127,16 @@ class ChargingSessionRepositoryImpl(
                     dao.insert(entity.copy(isSynced = true))
                 }
 
+            Graph.markOnline()
             Log.d("SyncDebug", "Marked ${syncedLocalIds.size} sessions as synced")
+
         } catch (e: Exception) {
+            Graph.markOffline()
             Log.e("SyncDebug", "Sync failed", e)
         }
     }
 
-
+    // мапінг Room-entity -> доменна модель
     private fun ChargingSessionEntity.toDomain(): ChargingSession =
         ChargingSession(
             id = id,

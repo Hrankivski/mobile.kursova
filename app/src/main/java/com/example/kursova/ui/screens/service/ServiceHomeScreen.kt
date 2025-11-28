@@ -1,15 +1,8 @@
 package com.example.kursova.ui.screens.service
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -21,6 +14,9 @@ fun ServiceHomeScreen(
     onViewLogs: () -> Unit,
     onBack: () -> Unit
 ) {
+    val viewModel = remember { ServiceHomeViewModel() }
+    val state by viewModel.uiState.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -32,20 +28,60 @@ fun ServiceHomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Service mode",
+                text = "Service / Admin panel",
                 style = MaterialTheme.typography.titleLarge
             )
+
+            if (state.isSyncing) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text("Sync in progress...")
+                }
+            }
+
+            if (state.syncError != null) {
+                Text(
+                    text = "Sync error: ${state.syncError}",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (state.syncSuccessMessage != null) {
+                Text(
+                    text = state.syncSuccessMessage!!,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(onClick = onManageConnectors) {
                 Text("Manage connectors")
             }
 
-            Button(onClick = onEditTariffs) {
+            Button(
+                onClick = onEditTariffs,
+            ) {
                 Text("Edit tariffs")
             }
 
             Button(onClick = onViewLogs) {
                 Text("View charging logs")
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.syncAll() },
+                enabled = !state.isSyncing
+            ) {
+                Text("Sync with server")
             }
 
             OutlinedButton(onClick = onBack) {

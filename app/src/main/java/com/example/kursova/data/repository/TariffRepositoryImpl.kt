@@ -18,16 +18,10 @@ class TariffRepositoryImpl(
                 nightEndHour = 7
             ).also { dao.insert(it) }
 
-        return TariffSettings(
-            id = entity.id,
-            dayPricePerKwh = entity.dayPricePerKwh,
-            nightPricePerKwh = entity.nightPricePerKwh,
-            nightStartHour = entity.nightStartHour,
-            nightEndHour = entity.nightEndHour
-        )
+        return entity.toDomain()
     }
 
-    override suspend fun saveSettings(settings: TariffSettings) {
+    override suspend fun updateSettings(settings: TariffSettings) {
         val entity = TariffSettingsEntity(
             id = settings.id,
             dayPricePerKwh = settings.dayPricePerKwh,
@@ -36,5 +30,32 @@ class TariffRepositoryImpl(
             nightEndHour = settings.nightEndHour
         )
         dao.insert(entity)
+        // якщо пізніше додамо серверну синхронізацію тарифів —
+        // тут можна буде викликати remote.syncTariffs(entity)
     }
+
+    /**
+     * Тимчасова реалізація refreshFromServer.
+     * Зараз тарифи живуть у локальній БД і ми просто гарантуємо, що
+     * запис існує (через getSettings()).
+     *
+     * Якщо ти пізніше зробиш API на сервері для тарифів:
+     * - додаємо сюди remote-джерело в конструктор
+     * - тягнемо DTO з сервера
+     * - зберігаємо його в dao.insert(...)
+     */
+    override suspend fun refreshFromServer() {
+        // локальний варіант: нічого не робимо або просто
+        // гарантуємо, що є дефолтні налаштування
+        getSettings()
+    }
+
+    private fun TariffSettingsEntity.toDomain(): TariffSettings =
+        TariffSettings(
+            id = id,
+            dayPricePerKwh = dayPricePerKwh,
+            nightPricePerKwh = nightPricePerKwh,
+            nightStartHour = nightStartHour,
+            nightEndHour = nightEndHour
+        )
 }
