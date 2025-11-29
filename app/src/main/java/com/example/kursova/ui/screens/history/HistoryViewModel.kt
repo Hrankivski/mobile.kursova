@@ -33,7 +33,6 @@ class HistoryViewModel : ViewModel() {
         load()
     }
 
-    // ⬇⬇⬇ ОНОВЛЕНА ФУНКЦІЯ load() ⬇⬇⬇
     private fun load() {
         viewModelScope.launch {
             try {

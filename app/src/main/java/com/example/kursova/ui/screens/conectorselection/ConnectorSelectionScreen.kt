@@ -55,10 +55,6 @@ fun ConnectorSelectionScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { /* можна викликати viewModel.loadConnectors(), якщо зробиш його public */ }) {
-                            Text("Retry")
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(onClick = onBack) {
                             Text("Back")
                         }

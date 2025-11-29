@@ -8,7 +8,6 @@ import com.example.kursova.data.local.entity.UserCardEntity
 
 @Dao
 interface UserCardDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: UserCardEntity): Long
 

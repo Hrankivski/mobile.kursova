@@ -24,12 +24,6 @@ data class ManageConnectorsUiState(
     val saveMessage: String? = null
 )
 
-/**
- * Екран керування конекторами:
- * - показує всі конектори з локальної БД,
- * - дозволяє змінювати статуси,
- * - зберігає зміни локально та шле їх на сервер.
- */
 class ManageConnectorsViewModel : ViewModel() {
 
     private val connectorRepo = Graph.connectorRepository

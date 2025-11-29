@@ -10,11 +10,6 @@ data class WelcomeUiState(
     val syncError: String? = null
 )
 
-/**
- * VM для початкового синку:
- * - стягнути користувачів із сервера (down);
- * - стягнути тарифи (server is source of truth).
- */
 class WelcomeViewModel : ViewModel() {
 
     private val userRepo = Graph.userCardRepository

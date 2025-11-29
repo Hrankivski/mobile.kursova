@@ -36,7 +36,7 @@ fun WelcomeScreen(
     // стан підключення з Graph
     val connectionState by Graph.connectionState.collectAsState()
 
-    // при першому показі екрана запускаємо початковий синк
+    // при першому показі екрана запускаємо початкову синхронізацію
     LaunchedEffect(Unit) {
         viewModel.initialSync()
     }
@@ -52,8 +52,7 @@ fun WelcomeScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
         )
-
-        // 🔹 Основний контент по центру, як було
+        // Основний контент розміщуємо по-центру
         Column(
             modifier = Modifier.align(Alignment.Center),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -64,7 +63,6 @@ fun WelcomeScreen(
                 style = MaterialTheme.typography.headlineSmall
             )
 
-            // індикатор синку (не обов'язково, але корисно мати)
             if (state.isSyncing) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
