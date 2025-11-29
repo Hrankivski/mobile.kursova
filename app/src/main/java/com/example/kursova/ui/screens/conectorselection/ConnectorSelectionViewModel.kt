@@ -31,7 +31,6 @@ class ConnectorSelectionViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ConnectorSelectionUiState())
     val uiState: StateFlow<ConnectorSelectionUiState> = _uiState
 
-    // id вибраного конектора
     private var selectedConnectorId: Int? = null
 
     init {
@@ -92,7 +91,7 @@ class ConnectorSelectionViewModel : ViewModel() {
 
                 val now = System.currentTimeMillis()
                 val sessionId = sessionRepo.createSession(
-                    userCardId = userId,      // ← ось тут іде userId
+                    userCardId = userId,
                     connectorId = connectorId,
                     startTime = now
                 )

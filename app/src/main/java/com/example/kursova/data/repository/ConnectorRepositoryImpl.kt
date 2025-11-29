@@ -74,7 +74,7 @@ class ConnectorRepositoryImpl(
         }
 
         remote.syncConnectors(dtos)
-        // Сервер тут просто дзеркало, локаль нічого не змінюємо
+        // Сервер тут просто дзеркало, локально нічого не змінюємо
     }
 
     private fun ConnectorEntity.toDomain(): Connector =

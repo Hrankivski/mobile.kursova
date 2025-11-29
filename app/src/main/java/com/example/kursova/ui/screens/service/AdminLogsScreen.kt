@@ -52,10 +52,6 @@ fun AdminLogsScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { /* перезавантажити */ }) {
-                            Text("Retry")
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(onClick = onBack) {
                             Text("Back")
                         }

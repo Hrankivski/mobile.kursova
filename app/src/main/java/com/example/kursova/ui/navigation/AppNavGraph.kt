@@ -47,7 +47,7 @@ fun AppNavGraph() {
         navController = navController,
         startDestination = Routes.WELCOME
     ) {
-        // ---------------- WELCOME ----------------
+        // ---------------- WELCOME SCREEN----------------
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onLogin = { navController.navigate(Routes.AUTH) },
@@ -87,7 +87,6 @@ fun AppNavGraph() {
         }
 
         // ---------------- MAIN FLOW: CONNECTOR SELECTION ----------------
-        // Раніше передавався userId в route, тепер екран може брати Graph.currentUserId
         composable(Routes.CONNECTOR_SELECTION) {
             ConnectorSelectionScreen(
                 onStartSession = { sessionId ->
@@ -147,7 +146,6 @@ fun AppNavGraph() {
         }
 
         // ---------------- SERVICE MODE: LOGIN ----------------
-        // Раніше тут був AdminStubScreen, тепер повноцінний сервіс-логін
         composable(Routes.ADMIN) {
             ServiceLoginScreen(
                 onServiceLoginSuccess = {

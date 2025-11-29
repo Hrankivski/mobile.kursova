@@ -9,7 +9,6 @@ import com.example.kursova.data.local.entity.ConnectorEntity
 
 @Dao
 interface ConnectorDao {
-
     @Query("SELECT * FROM connectors")
     suspend fun getAll(): List<ConnectorEntity>
 

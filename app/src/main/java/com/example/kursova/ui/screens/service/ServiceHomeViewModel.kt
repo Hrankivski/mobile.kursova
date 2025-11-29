@@ -33,7 +33,7 @@ class ServiceHomeViewModel : ViewModel() {
             )
 
             try {
-                // 1) підтягнути користувачів із сервера (down)
+                // 1) підтягнути користувачів із сервера
                 userRepo.syncUsersDown()
 
                 // 2) оновити тарифи із сервера

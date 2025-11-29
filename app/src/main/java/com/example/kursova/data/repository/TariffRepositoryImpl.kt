@@ -30,23 +30,10 @@ class TariffRepositoryImpl(
             nightEndHour = settings.nightEndHour
         )
         dao.insert(entity)
-        // якщо пізніше додамо серверну синхронізацію тарифів —
-        // тут можна буде викликати remote.syncTariffs(entity)
     }
 
-    /**
-     * Тимчасова реалізація refreshFromServer.
-     * Зараз тарифи живуть у локальній БД і ми просто гарантуємо, що
-     * запис існує (через getSettings()).
-     *
-     * Якщо ти пізніше зробиш API на сервері для тарифів:
-     * - додаємо сюди remote-джерело в конструктор
-     * - тягнемо DTO з сервера
-     * - зберігаємо його в dao.insert(...)
-     */
+
     override suspend fun refreshFromServer() {
-        // локальний варіант: нічого не робимо або просто
-        // гарантуємо, що є дефолтні налаштування
         getSettings()
     }
 

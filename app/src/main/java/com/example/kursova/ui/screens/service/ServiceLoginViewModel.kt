@@ -15,12 +15,6 @@ data class ServiceLoginUiState(
     val error: String? = null
 )
 
-/**
- * Логін у сервісний режим:
- * - тягнемо користувачів із сервера (down-sync),
- * - шукаємо користувача локально,
- * - перевіряємо, що це адмін (isAdmin = true).
- */
 class ServiceLoginViewModel : ViewModel() {
 
     private val userRepo = Graph.userCardRepository

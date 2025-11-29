@@ -19,10 +19,9 @@ class ChargingSessionRepositoryImpl(
         connectorId: Int,
         startTime: Long
     ): Long {
-        // ВАЖЛИВО: використовуємо саме userCardId, який прийшов параметром
-        // і НЕ чіпаємо тут Graph.currentUserId, щоб не було прихованих залежностей.
+
         val entity = ChargingSessionEntity(
-            id = 0L,                    // Room сам поставить новий PK
+            id = 0L,
             userCardId = userCardId,
             connectorId = connectorId,
             startTime = startTime,
@@ -59,7 +58,7 @@ class ChargingSessionRepositoryImpl(
             energyKwh = energyKwh,
             totalPrice = totalPrice,
             tariffUsed = tariffUsed,
-            isSynced = false           // після змін позначаємо як не синхронізовану
+            isSynced = false
         )
 
         Log.d(

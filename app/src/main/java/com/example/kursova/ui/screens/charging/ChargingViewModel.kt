@@ -76,12 +76,14 @@ class ChargingViewModel(
                 }
                 val hour = calendar.get(Calendar.HOUR_OF_DAY)
 
+                // Перевіряємо час для вибору тарифу
                 val isNight = isNightHour(
                     hour,
                     tariffs.nightStartHour,
                     tariffs.nightEndHour
                 )
 
+                // Вибираємо тариф
                 if (isNight) {
                     pricePerKwhInternal = tariffs.nightPricePerKwh
                     tariffLabelInternal = "NIGHT"
@@ -116,10 +118,12 @@ class ChargingViewModel(
             isTimerRunning = true
             var elapsed = 0L
 
+            // Ставимо посекундний таймер
             while (isTimerRunning) {
                 delay(1000)
                 elapsed += 1
 
+                // Нараховуємо споживання енергії
                 val energy = if (powerKwInternal > 0.0) {
                     powerKwInternal * (elapsed.toDouble() / 3600.0)
                 } else 0.0
@@ -171,8 +175,7 @@ class ChargingViewModel(
                 try {
                     sessionRepository.syncUnsyncedSessions()
                 } catch (e: Exception) {
-                    // якщо немає мережі / сервер не відповів – не ламаємо UI
-                    // можна залогувати e.message або показати тост у майбутньому
+                    // якщо немає мережі або сервер не відповів – не кидаємо помилку, щоб не зупиняти додаток
                 }
 
                 _uiState.value = finalState.copy(
