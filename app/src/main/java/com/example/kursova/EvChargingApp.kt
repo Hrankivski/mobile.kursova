@@ -89,7 +89,7 @@ object Graph {
 
         retrofit = Retrofit.Builder()
             // Емулятор Android підключається до локального ПК через 10.0.2.2
-            .baseUrl("http://10.0.2.2:8080/")
+            .baseUrl("http://192.168.1.109:8080/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
